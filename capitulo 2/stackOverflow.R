@@ -47,12 +47,52 @@ stack_teste <- testing(stack_split)
 # forma aleatoria. Para isso usaremos um estrategia chamada Downsample
 
         # settando a estrategia de downsample na variavel stack_recipe
+        # stack_recipe estara guardando uma "receita" de sobre qual variavel sera feito o downsample
 stack_recipe <- recipe(remote ~ ., data = stack_treino) %>%
   step_downsample(remote)
 
+
+        #Essas duas linhas de codigo servem para "preparar" a receita e depois "cozinhar" essa
+        #essa receita. Logo, teremos na variavel stack_down o data frame totalmente balanceado.
 stack_prep <- prep(stack_recipe)
 stack_down <- bake(stack_prep, new_data = NULL)
 
         # agora os dados de treino estao balanceados 
 stack_down %>%
   count(remote)
+
+rm(stack_down, stack_prep)
+
+#Treinando os dados
+        
+        # Regressão logistica 
+
+        # settamos o modelo que sera usado
+glm_spec <- logistic_reg() %>%
+  set_engine('glm')
+
+        # usamos um workflow para abstrair toda a logica de preparacao e finalizacao da receita 
+stack_wf <- workflow() %>%
+  add_recipe(stack_recipe)
+
+        # adicionando o modelo e ajustando o workflow
+stack_glm <- stack_wf %>%
+  add_model(glm_spec) %>%
+  fit(data = stack_treino)
+
+
+
+
+        # Arvore de decisao
+
+
+        # settando o modelo que sera usado
+tree_spec <- decision_tree() %>%
+  set_engine('rpart') %>%
+  set_mode('classification')
+        
+        # adicionando o modeo e ajustando o workflow
+stack_tree <- stack_wf %>%
+  add_model(tree_spec) %>%
+  fit(data = stack_treino)
+
