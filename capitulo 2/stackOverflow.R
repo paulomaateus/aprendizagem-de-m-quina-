@@ -42,6 +42,7 @@ stack_split <- stackOverflow %>%
 stack_treino <- training(stack_split)
 stack_teste <- testing(stack_split)
 
+rm(stack_split)
 # Como os dados de programadores remotos estao desbalanceados, isso pode atrapalhar nossas predicoes.
 # Para resolver esse problema, iremos balancear essas dados removendo parte do grupo majoritario de
 # forma aleatoria. Para isso usaremos um estrategia chamada Downsample
@@ -82,7 +83,6 @@ stack_glm <- stack_wf %>%
 
 
 
-
         # Arvore de decisao
 
 
@@ -96,3 +96,33 @@ stack_tree <- stack_wf %>%
   add_model(tree_spec) %>%
   fit(data = stack_treino)
 
+rm(stack_recipe, stack_wf, glm_spec, tree_spec)
+
+        # Confusion matrix 
+
+
+        # Criando matriz com adicao dos resultados da predicao
+resultados <- stack_teste %>%
+  bind_cols(predict(stack_glm, stack_teste) %>%
+              rename(.pred_glm = .pred_class)) %>%
+  bind_cols(predict(stack_tree, stack_teste) %>%
+              rename(.pred_tree = .pred_class))
+
+
+        # Visualizando a quantidade de acertos da predicao 
+resultados %>%
+  conf_mat(truth = remote, estimate = .pred_glm)
+
+resultados %>% 
+  conf_mat(truth = remote, estimate = .pred_tree)
+
+        # Visualizando a acuracia do aprendizado para cada tipo de modelo
+accuracy(resultados, truth = remote, estimate = .pred_glm)
+accuracy(resultados, truth = remote, estimate = .pred_tree)
+
+        # Visualizando o valor preditivo positivo para os dois modelos
+ppv(resultados, truth = remote, estimate = .pred_glm)
+ppv(resultados, truth = remote, estimate = .pred_tree)
+
+
+rm(list = ls())
